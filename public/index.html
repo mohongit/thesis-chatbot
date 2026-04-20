@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Academic Ally</title>
+    <style>
+        :root { --bg: #0a0a0a; --card: #141414; --accent: #3d5afe; --text: #e0e0e0; --border: #333; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        
+        #overlay { position: fixed; inset: 0; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 100; }
+        .setup-card { background: var(--card); padding: 40px; border-radius: 8px; border: 1px solid var(--border); text-align: center; width: 350px; }
+        
+        #chat-container { width: 95%; max-width: 900px; height: 95vh; display: none; flex-direction: column; background: var(--card); border: 1px solid var(--border); position: relative; }
+        .header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: #111; }
+        
+        .prompt-starter-bar { 
+        padding: 10px 20px; 
+        display: flex; 
+        gap: 8px; 
+        border-bottom: 1px solid #222; 
+        overflow-x: auto;
+        flex-shrink: 0;  
+        }
+
+        .starter-btn { 
+        background: #1a1a1a; 
+        border: 1px solid #444; 
+        color: #aaa; 
+        padding: 8px 14px; 
+        border-radius: 4px; 
+        font-size: 0.75rem; 
+        cursor: pointer; 
+        white-space: nowrap; 
+        flex-shrink: 0;      
+        }
+
+        .h-btn { background: transparent; border: 1px solid var(--accent); color: var(--accent); padding: 8px 12px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; }
+        .h-btn:hover { background: var(--accent); color: white; }
+
+        #messages { flex-grow: 1; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; gap: 20px; }
+        .bubble { max-width: 90%; line-height: 1.6; white-space: pre-wrap; font-size: 0.95rem; }
+        .user { align-self: flex-end; color: var(--accent); border-right: 2px solid var(--accent); padding-right: 15px; }
+        .bot { align-self: flex-start; border-left: 2px solid #444; padding-left: 15px; }
+
+        .disclaimer { font-size: 0.7rem; color: #555; text-align: center; padding: 5px; background: #000; border-top: 1px solid #222; }
+
+        .input-area { padding: 15px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+        input[type="text"] { flex-grow: 1; background: #222; border: none; padding: 12px; border-radius: 4px; color: white; outline: none; }
+        .send-btn { background: var(--accent); color: white; border: none; padding: 0 25px; font-weight: bold; cursor: pointer; border-radius: 4px; }
+
+        #ref-box { 
+            display: none; position: absolute; top: 65px; right: 20px; width: 300px; 
+            background: #1a1a1a; border: 1px solid var(--accent); padding: 15px; 
+            border-radius: 4px; font-size: 0.75rem; z-index: 50; box-shadow: 0 4px 20px rgba(0,0,0,0.6); 
+        }
+        #messages::-webkit-scrollbar {
+        width: 8px;
+        }
+
+        #messages::-webkit-scrollbar-track {
+        background: #0a0a0a; 
+        }
+
+        #messages::-webkit-scrollbar-thumb {
+        background: #333; 
+        border-radius: 10px;
+        }
+
+        #messages::-webkit-scrollbar-thumb:hover {
+        background: #444;
+        }
+
+        #messages {
+        scrollbar-width: thin;
+        scrollbar-color: #333 #0a0a0a;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="overlay">
+        <div class="setup-card">
+            <h2 style="color: var(--accent)">Academic Ally</h2>
+            <input type="text" id="major-input" placeholder="Please enter your major..." style="width: 85%; margin-bottom: 20px; padding: 12px; background:#222; color:white; border:1px solid #333; border-radius:4px;">
+            <button class="send-btn" onclick="startChat()" style="width: 90%; height: 45px;">Launch assistant</button>
+        </div>
+    </div>
+
+    <div id="chat-container">
+        <div class="header">
+            <div id="display-major" style="font-weight: bold; color: #666; font-size: 0.7rem; letter-spacing: 1px;"></div>
+            <button class="h-btn" onclick="toggleRef()">How did you get that answer?</button>
+        </div>
+
+        <div class="prompt-starter-bar">
+            <button class="starter-btn" onclick="fillPrompt('Explain the concept of: ')">💡 Concept Explanation</button>
+            <button class="starter-btn" onclick="fillPrompt('Help me write about: ')">✍️ Writing Support</button>
+            <button class="starter-btn" onclick="fillPrompt('Solve this problem: ')">🛠️ Problem Solving</button>
+            <button class="starter-btn" onclick="fillPrompt('Summarize this text: ')">📝 Summarize</button>
+        </div>
+        
+        <div id="ref-box">
+            <strong style="color: var(--accent)">Academic References:</strong><br><br>
+            <span id="ref-text">No message sent yet.</span>
+        </div>
+
+        <div id="messages"></div>
+
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Ask me a question...">
+            <button class="send-btn" onclick="sendMessage()">Send</button>
+        </div>
+        
+        <div class="disclaimer">
+            This is an AI Assistant. Content is for academic aid only and should be verified. Do not use as final submission.
+        </div>
+    </div>
+
+    <script>
+        let studentMajor = "";
+
+        function startChat() {
+            const val = document.getElementById('major-input').value;
+            if(!val) return;
+            studentMajor = val;
+            document.getElementById('display-major').innerText = studentMajor.toUpperCase();
+            document.getElementById('overlay').style.display = "none";
+            document.getElementById('chat-container').style.display = "flex";
+        }
+
+        function fillPrompt(text) {
+            const input = document.getElementById('userInput');
+            input.value = text;
+            input.focus();
+        }
+
+        function toggleRef() { 
+            const b = document.getElementById('ref-box'); 
+            b.style.display = b.style.display === 'block' ? 'none' : 'block'; 
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const messages = document.getElementById('messages');
+
+            if (!input.value) return;
+            const text = input.value;
+            messages.innerHTML += `<div class="bubble user">${text}</div>`;
+            input.value = '';
+
+            try {
+                const response = await fetch('/chat', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ message: text, major: studentMajor }) 
+                });
+                
+                const data = await response.json();
+                document.getElementById('ref-text').innerText = data.references;
+                messages.innerHTML += `<div class="bubble bot">${data.reply}</div>`;
+                messages.scrollTop = messages.scrollHeight;
+            } catch (e) { 
+                messages.innerHTML += `<div class="bubble bot" style="color:red">Connection lost.</div>`; 
+            }
+        }
+    </script>
+</body>
+</html>
