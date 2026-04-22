@@ -118,6 +118,14 @@
 
     <script>
         let studentMajor = "";
+        let currentReferences = "No message sent yet.";
+        document.getElementById('major-input').addEventListener("keypress", function(e) {
+            if (e.key === "Enter") startChat();
+        });
+
+        document.getElementById('userInput').addEventListener("keypress", function(e) {
+            if (e.key === "Enter") sendMessage();
+        });
 
         function startChat() {
             const val = document.getElementById('major-input').value;
@@ -135,8 +143,10 @@
         }
 
         function toggleRef() { 
-            const b = document.getElementById('ref-box'); 
-            b.style.display = b.style.display === 'block' ? 'none' : 'block'; 
+            const messages = document.getElementById('messages');
+            const refHeader = `<strong style="color: var(--accent)">Academic References:</strong>\n`;
+            messages.innerHTML += `<div class="bubble bot" style="border-color: var(--accent)">${refHeader}${currentReferences}</div>`;
+            messages.scrollTop = messages.scrollHeight;
         }
 
         async function sendMessage() {
@@ -147,6 +157,7 @@
             const text = input.value;
             messages.innerHTML += `<div class="bubble user">${text}</div>`;
             input.value = '';
+            messages.scrollTop = messages.scrollHeight;
 
             try {
                 const response = await fetch('/chat', { 
@@ -156,7 +167,9 @@
                 });
                 
                 const data = await response.json();
-                document.getElementById('ref-text').innerText = data.references;
+                
+                currentReferences = data.references;
+                
                 messages.innerHTML += `<div class="bubble bot">${data.reply}</div>`;
                 messages.scrollTop = messages.scrollHeight;
             } catch (e) { 

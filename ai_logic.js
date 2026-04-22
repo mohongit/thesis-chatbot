@@ -3,7 +3,7 @@ const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY); 
+const supabase = createClient(process.env.SUPABASE_URL, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4ZnN5ZGp4bnZpZXZraWxmYXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0OTg1NzUsImV4cCI6MjA5MjA3NDU3NX0.WlqIsIJ7yw08I0OeYh0S5fnaxegEXUgJ1Ksq1y2l6c4");
 
 async function getChatbotResponse(userMessage, studentMajor) {
     const model = genAI.getGenerativeModel({ 
