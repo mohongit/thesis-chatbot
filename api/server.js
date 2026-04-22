@@ -1,5 +1,5 @@
 const express = require('express');
-const { getChatbotResponse } = require('./ai_logic');
+const { getChatbotResponse } = require('../ai_logic');
 const path = require('path');
 require('dotenv').config();
 
