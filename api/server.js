@@ -1,13 +1,15 @@
 const express = require('express');
 const { getChatbotResponse } = require('./ai_logic');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
 app.use(express.json());
-app.use(express.static('public'));
+
+app.use(express.static(path.join(__dirname, '../')));
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, '../', 'index.html'));
 });
 
 app.post('/chat', async (req, res) => {
@@ -22,4 +24,8 @@ app.post('/chat', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+}
+
+module.exports = app;
