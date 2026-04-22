@@ -3,11 +3,11 @@ const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const supabase = createClient(process.env.SUPABASE_URL, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4ZnN5ZGp4bnZpZXZraWxmYXZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0OTg1NzUsImV4cCI6MjA5MjA3NDU3NX0.WlqIsIJ7yw08I0OeYh0S5fnaxegEXUgJ1Ksq1y2l6c4");
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 async function getChatbotResponse(userMessage, studentMajor) {
     const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash", 
+        model: "gemini-2.5-flash",
         systemInstruction: `
             ROLE: Professional Academic Coach.
             
@@ -20,38 +20,46 @@ async function getChatbotResponse(userMessage, studentMajor) {
         `
     });
 
-    const chat = model.startChat();
-    const result = await chat.sendMessage(userMessage);
-    const fullText = result.response.text();
-    
-    const parts = fullText.split('---');
-    let reply = parts[0].trim();
-    let rawReferences = parts[1] ? parts[1].trim() : `Foundational concepts in ${studentMajor}`;
-
-    const cleanReply = reply.replace(/\*\*/g, '');
-
-    const cleanReferences = rawReferences
-        .replace(/\*\*(Academic\s)?References:\*\*/gi, '')
-        .replace(/(Academic\s)?References:/gi, '')       
-        .replace(/\*\*/g, '')                            
-        .trim();
-
     try {
-        await supabase.from('interactions').insert([
+        const chat = model.startChat();
+        const result = await chat.sendMessage(userMessage);
+        const fullText = result.response.text();
+        
+        const parts = fullText.split('---');
+        let reply = parts[0].trim();
+        let rawReferences = parts[1] ? parts[1].trim() : `Foundational concepts in ${studentMajor}`;
+
+        const cleanReply = reply.replace(/\*\*/g, '');
+        const cleanReferences = rawReferences
+            .replace(/\*\*(Academic\s)?References:\*\*/gi, '')
+            .replace(/(Academic\s)?References:/gi, '')       
+            .replace(/\*\*/g, '')                            
+            .trim();
+
+        const { error: dbError } = await supabase.from('interactions').insert([
             { 
                 major: studentMajor, 
                 user_query: userMessage, 
                 bot_response: cleanReply 
             }
         ]);
-    } catch (dbError) {
-        console.error("Database logging failed:", dbError);
-    }
 
-    return {
-        reply: cleanReply,
-        references: cleanReferences
-    };
+        if (dbError) {
+            console.error("Supabase Insert Error:", dbError.message);
+        }
+
+        return {
+            reply: cleanReply,
+            references: cleanReferences
+        };
+
+    } catch (error) {
+        console.error("AI Logic Error:", error);
+        return {
+            reply: "The AI is having trouble connecting. Please try again.",
+            references: "Check your API connection."
+        };
+    }
 }
 
 module.exports = { getChatbotResponse };
